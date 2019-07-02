@@ -1,0 +1,29 @@
+{
+    "name": "chanlly/cal-contanier",
+    "description":"cal-contanier",
+    "authors": [
+        {
+            "name": "沧澜",
+            "email": "lryhuimeng@163.cn"
+        }
+    ],
+    "keywords": [
+        "php",
+        "container",
+        "cal",
+        "chanlly"
+    ],
+    "require": {
+		"php": "^7.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Chanlly\\Cal-contanier\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Chanlly\\Cal-contanier\\Test\\": "test"
+        }
+    }
+}
