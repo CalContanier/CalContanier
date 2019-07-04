@@ -1,6 +1,7 @@
 {
-    "name": "chanlly/cal-contanier",
-    "description":"cal-contanier",
+    "name": "cal-container/cal-container",
+    "description":"cal-container",
+    "license": "MIT",
     "authors": [
         {
             "name": "沧澜",
@@ -11,19 +12,24 @@
         "php",
         "container",
         "cal",
+        "calject",
         "chanlly"
     ],
     "require": {
-		"php": "^7.0"
+		"php": "^7.0",
+        "psr/container": "^1.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^7.5"
     },
     "autoload": {
         "psr-4": {
-            "Chanlly\\Cal-contanier\\": "src"
+            "CalContainer\\": "src"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Chanlly\\Cal-contanier\\Test\\": "test"
+            "CalContainer\\Test\\": "test"
         }
     }
 }
