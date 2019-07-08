@@ -9,10 +9,13 @@
 namespace CalContainer;
 
 
+use CalContainer\Exceptions\InstanceCreateException;
 use CalContainer\Register\RegisterManager;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
+use ReflectionClass;
+use ReflectionException;
 
 class Container implements ContainerInterface
 {
@@ -26,6 +29,61 @@ class Container implements ContainerInterface
      */
     protected $registerManager;
     
+    protected function init()
+    {
+        $this->registerManager = new RegisterManager();
+    }
+    
+    /**
+     * @param $abstract
+     * @return object
+     * @throws InstanceCreateException
+     * @throws ReflectionException
+     */
+    public function make($abstract)
+    {
+        return $this->create($abstract);
+        
+    }
+    
+    public function call()
+    {
+    
+    }
+    
+    /**
+     * create a new object
+     * @param string $abstract
+     * @return object
+     * @throws ReflectionException
+     * @throws InstanceCreateException
+     */
+    protected function create($abstract)
+    {
+        if (!class_exists($abstract)) {
+            InstanceCreateException::throw($abstract . ' class is not exists.');
+        }
+        $refClass = new ReflectionClass($abstract);
+        if ($refClass->hasMethod('__construct')) {
+            $constructMethod = $refClass->getMethod('__construct');
+            if ($constructMethod->isPublic()) {
+                $consParams = $constructMethod->getParameters();
+                foreach ($consParams as $param) {
+                    $className = $param->getClass()->getName();
+                    if ($this->has($className)) {
+                        $_constructParams[] = $this->get($className);
+                    } else {
+                        $_constructParams[] = $this->create($className);
+                    }
+                }
+            } else {
+                InstanceCreateException::throw('can not create ' . $abstract . ': Call to ' . $constructMethod->getPrototype() . ' __construct');
+            }
+        }
+        return $refClass->newInstance(... ($_constructParams ?? []));
+    }
+    
+    
     /**
      * Finds an entry of the container by its identifier and returns it.
      *
@@ -38,7 +96,7 @@ class Container implements ContainerInterface
      */
     public function get($id)
     {
-        // TODO: Implement get() method.
+        return $this->registerManager->get($id);
     }
     
     /**
@@ -54,7 +112,7 @@ class Container implements ContainerInterface
      */
     public function has($id)
     {
-        // TODO: Implement has() method.
+        return $this->registerManager->has($id);
     }
     
     /**
@@ -76,9 +134,8 @@ class Container implements ContainerInterface
             $instance = new static();
         }
         return $instance;
-        
     }
-    private function __construct() { }
+    private function __construct() { $this->init(); }
     private function __clone() { }
     
 }

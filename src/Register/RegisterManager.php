@@ -10,6 +10,7 @@ namespace CalContainer\Register;
 
 
 use CalContainer\Contracts\RegisterInterface;
+use CalContainer\Exceptions\InstanceNotFoundException;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 
@@ -77,7 +78,7 @@ class RegisterManager implements RegisterInterface
                 return $register->get($id);
             }
         }
-        throw ;
+        InstanceNotFoundException::throw('can not find ' . $id . ' in registers.');
     }
     
     /**
@@ -93,6 +94,11 @@ class RegisterManager implements RegisterInterface
      */
     public function has($id)
     {
-        // TODO: Implement has() method.
+        foreach ($this->registers as $register) {
+            if ($register->has($id)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

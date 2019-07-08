@@ -9,13 +9,14 @@
 namespace CalContainer\Contracts;
 
 use Exception;
+use Psr\Container\ContainerExceptionInterface;
 use Throwable;
 
 /**
  * Class AbsException
  * @package CalContainer\Contracts
  */
-abstract class AbsContainerException extends Exception
+abstract class AbsContainerException extends Exception implements ContainerExceptionInterface
 {
     
     /**

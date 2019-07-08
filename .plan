@@ -1,7 +1,7 @@
 
 1. 正常容器功能(注册与实现分离)
     1. 类自动注入，解析构造或者方法参数列表
-    2. 根据参数列表内容自动注入(注解 > 参数传入契约(临时契约) > 参数传入绑定(临时绑定关系) > 契约 > 绑定 > 创建 > 传入普通参数(变量映射) > 传入普通参数散列)
+    2. 根据参数列表内容自动注入(注解 > 参数传入契约(临时契约) > 参数传入绑定(临时绑定关系) > 契约 > 绑定 > 自动对象创建 > 传入普通参数(变量名映射) > 传入普通参数散列(按顺序散列))
         1. 根据注解内容，从注解中解析参数并注入到参数变量中
         2. 根据类名从契约列表检查是否存在契约关系(容器契约及临时声明契约[待定])
             * 方法级契约(class->function()) > 类级契约(class) > 命名空间契约(namespace)
@@ -42,9 +42,10 @@
     * 延迟注入（Lazy injection）
 
 ## 参考:
-### 关于PSR规范
+### [关于PSR](https://learnku.com/index.php/docs/psr/about-psr/1613)
 * [php-fig 容器规范](https://github.com/php-fig/container)
-* [PSR-11译文](https://learnku.com/index.php/docs/psr/psr-11-container/1621)
+* [PSR-11 容器接口](https://learnku.com/index.php/docs/psr/psr-11-container/1621)
+* [PSR-11 容器接口 - 说明文档](https://learnku.com/index.php/docs/psr/psr-11-container-meta/1622)
 ### 开源项目参考
 * [php-di](https://github.com/PHP-DI/PHP-DI)
 * [silexphp/Pimple](https://github.com/silexphp/Pimple)
@@ -64,6 +65,6 @@
 
 ###
 
-
+d
 
 

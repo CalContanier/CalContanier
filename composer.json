@@ -24,12 +24,13 @@
     },
     "autoload": {
         "psr-4": {
-            "CalContainer\\": "src"
+            "CalContainer\\": "src",
+            "CalContainer\\Examples\\": "examples"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "CalContainer\\Test\\": "test"
+            "CalContainer\\Test\\": ["test", "testClass"]
         }
     }
 }
