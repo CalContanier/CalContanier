@@ -8,134 +8,176 @@
 
 namespace CalContainer;
 
-
-use CalContainer\Exceptions\InstanceCreateException;
-use CalContainer\Register\RegisterManager;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\ContainerInterface;
-use Psr\Container\NotFoundExceptionInterface;
+use CalContainer\Contracts\AbsSingleton;
+use CalContainer\Exceptions\ContainerException;
+use CalContainer\Register\Register;
+use Closure;
+use Exception;
 use ReflectionClass;
 use ReflectionException;
+use ReflectionMethod;
+use ReflectionParameter;
 
-class Container implements ContainerInterface
+class Container extends AbsSingleton
 {
-    /**
-     * @var []static
-     */
-    private static $containers;
     
     /**
-     * @var RegisterManager
+     * @var Register
      */
-    protected $registerManager;
+    protected $register;
     
+    /**
+     * singleton init
+     */
     protected function init()
     {
-        $this->registerManager = new RegisterManager();
+        $this->register = Register::getInstance();
     }
     
     /**
-     * @param $abstract
-     * @return object
-     * @throws InstanceCreateException
+     * @return Register
+     */
+    public static function register()
+    {
+        return static::getInstance()->register;
+    }
+    
+    /**
+     * @param object/string $abstract
+     * @param string $method
+     * @param array $runParams
+     * @return mixed
      * @throws ReflectionException
      */
-    public function make($abstract)
+    public function call($abstract, $method, array $runParams = [])
     {
-        return $this->create($abstract);
+        $refClass = new ReflectionClass($abstract);
+        $refClass->hasMethod($method) || (function () use ($refClass, $method) {
+            ContainerException::throw("Uncaught Error: Call to undefined method " . $refClass->getName() . "::$method .");
+        })();
+        $reflectionMethod = $refClass->getMethod($method);
+        $reflectionMethod->isPublic() || (function () use ($method) {
+            ContainerException::throw("$method must be public.");
+        })();
+        $params = $this->getMethodParams($reflectionMethod, $refClass, $method, $runParams);
+        return $abstract->{$method}(... $params);
+    }
+    
+    /**
+     * @param string|object|ReflectionClass $abstract
+     * @return mixed|null
+     * @throws ReflectionException
+     * @throws Exception
+     */
+    public function get($abstract)
+    {
+        $refClass = $abstract instanceof ReflectionClass ? $abstract : new ReflectionClass($abstract);
         
+        // get in bind
+        $bind = $this->register->bind();
+        if ($bind->has($refClass->getName())) {
+            return $bind->get($refClass->getName());
+        }
+        
+        // to create
+        return $this->create($abstract);
     }
     
-    public function call()
-    {
-    
-    }
     
     /**
      * create a new object
      * @param string $abstract
+     * @param array $params
+     * @return Closure|object
+     * @throws ReflectionException
+     * @throws ContainerException
+     */
+    public function create($abstract, array $params = [])
+    {
+        return $this->createInstance($abstract, $params);
+    }
+    
+    /**
+     * create new instance
+     * @param string|ReflectionClass $abstract class
+     * @param array $runParams for the first level only
+     * @param array $tmp temporary class object
      * @return object
      * @throws ReflectionException
-     * @throws InstanceCreateException
+     * @throws ContainerException
      */
-    protected function create($abstract)
+    protected function createInstance($abstract, array $runParams = [], array $tmp = [])
     {
-        if (!class_exists($abstract)) {
-            InstanceCreateException::throw($abstract . ' class is not exists.');
+        $className = $abstract instanceof ReflectionClass ? $abstract->getName() : $abstract;
+        // todo: flag 1: check
+        if (isset($tmp[$className])) {
+            return $tmp[$className];
         }
-        $refClass = new ReflectionClass($abstract);
+        array_key_exists($className, $tmp) && (function () {
+            ContainerException::throw('can not create a circular dependencies class object.');
+        })();
+        $instance = &$tmp[$className];
+        
+        // todo: flag 2: get method && parse params
+        $refClass = $abstract instanceof ReflectionClass ? $abstract : new ReflectionClass($abstract);
+        if ($refClass->isInterface() || $refClass->isAbstract()) {
+            ContainerException::throw('can not create a class in interface or abstract.');
+        } elseif ($refClass->getName() === Closure::class) {
+            return function () {
+            };
+        }
         if ($refClass->hasMethod('__construct')) {
-            $constructMethod = $refClass->getMethod('__construct');
-            if ($constructMethod->isPublic()) {
-                $consParams = $constructMethod->getParameters();
-                foreach ($consParams as $param) {
-                    $className = $param->getClass()->getName();
-                    if ($this->has($className)) {
-                        $_constructParams[] = $this->get($className);
-                    } else {
-                        $_constructParams[] = $this->create($className);
-                    }
-                }
+            $reflectionMethod = $refClass->getMethod('__construct');
+            $reflectionMethod->isPublic() || (function () {
+                ContainerException::throw("can not automatically create the class object, __construct must be public.");
+            })();
+            $_constructParams = $this->getMethodParams($reflectionMethod, $refClass, '__construct', $runParams);
+        }
+        
+        // todo: flag 3: make instance && bind to tmp
+        return $instance = $refClass->newInstance(... ($_constructParams ?? []));
+    }
+    
+    /**
+     * parse
+     * @param ReflectionParameter $param
+     * @return mixed|ReflectionClass|null
+     * @throws ReflectionException
+     */
+    private function paramsHandle(ReflectionParameter $param)
+    {
+        if ($param->getClass()) {
+            return $param->getClass();
+        } elseif ($param->isDefaultValueAvailable()) {
+            return $param->getDefaultValue();
+        } elseif ($param->getType()) {
+            return ['string' => '', 'int' => 0, 'array' => [], 'bool' => false, 'float' => 0.0, 'iterable' => [], 'callable' => function () {
+                }][$param->getType()->getName()] ?? null;
+        } else {
+            return null;
+        }
+    }
+    
+    /**
+     * get method params
+     * @param ReflectionMethod $reflectionMethod
+     * @param ReflectionClass $refClass
+     * @param string $method
+     * @param array $runParams
+     * @return array
+     */
+    private function getMethodParams(ReflectionMethod $reflectionMethod, ReflectionClass $refClass, string $method, array $runParams = [])
+    {
+        return array_map(function (ReflectionParameter $param) use ($refClass, $method, $runParams) {
+            // get in $params
+            
+            // get in contact and bind or create new instance
+            if (($result = $this->paramsHandle($param)) instanceof ReflectionClass) {
+                return $this->register->contact()->getInAll($param->getClass()->getName(), $refClass->getNamespaceName(), $refClass->getName(), $method) ?? $this->get($result);
             } else {
-                InstanceCreateException::throw('can not create ' . $abstract . ': Call to ' . $constructMethod->getPrototype() . ' __construct');
+                return $result;
             }
-        }
-        return $refClass->newInstance(... ($_constructParams ?? []));
+        }, $reflectionMethod->getParameters());
     }
-    
-    
-    /**
-     * Finds an entry of the container by its identifier and returns it.
-     *
-     * @param string $id Identifier of the entry to look for.
-     *
-     * @return mixed Entry.
-     * @throws ContainerExceptionInterface Error while retrieving the entry.
-     *
-     * @throws NotFoundExceptionInterface  No entry was found for **this** identifier.
-     */
-    public function get($id)
-    {
-        return $this->registerManager->get($id);
-    }
-    
-    /**
-     * Returns true if the container can return an entry for the given identifier.
-     * Returns false otherwise.
-     *
-     * `has($id)` returning true does not mean that `get($id)` will not throw an exception.
-     * It does however mean that `get($id)` will not throw a `NotFoundExceptionInterface`.
-     *
-     * @param string $id Identifier of the entry to look for.
-     *
-     * @return bool
-     */
-    public function has($id)
-    {
-        return $this->registerManager->has($id);
-    }
-    
-    /**
-     * @return RegisterManager
-     */
-    public static function register(): RegisterManager
-    {
-        return self::getInstance()->registerManager;
-    }
-    
-    /*---------------------------------------------- Singleton ----------------------------------------------*/
-    
-    /**
-     * @return static
-     */
-    public static function getInstance()
-    {
-        if (!$instance = &self::$containers[static::class]) {
-            $instance = new static();
-        }
-        return $instance;
-    }
-    private function __construct() { $this->init(); }
-    private function __clone() { }
     
 }

@@ -8,61 +8,48 @@
 
 namespace CalContainer\Register;
 
-use CalContainer\Contracts\RegisterInterface;
+use CalContainer\Contracts\AbsSingleton;
 
-class Register implements RegisterInterface
+class Register extends AbsSingleton
 {
     /**
-     * @var []static
+     * @var RegisterBind
      */
-    private static $registers;
+    protected $bind;
     
     /**
+     * @var RegisterContact
+     */
+    protected $contact;
+    
+    /**
+     * delay to bind
      * @var array
      */
-    protected $instance = [];
+    protected $delay = [];
     
-    /**
-     * @param $abstract
-     * @param $instance
-     * @return $this
-     */
-    public function register($abstract, $instance)
+    // init
+    protected function init()
     {
-        $this->instance[$abstract] = $instance;
-        return $this;
+        $this->contact = new RegisterContact();
+        $this->bind = new RegisterBind();
     }
     
     /**
-     * @param $id
-     * @return mixed
+     * @return RegisterContact
      */
-    public function get($id)
+    public function contact()
     {
-        return $this->instance[$id];
+        return $this->contact;
     }
     
     /**
-     * @param $id
-     * @return bool
+     * @return RegisterBind
      */
-    public function has($id): bool
+    public function bind()
     {
-        return isset($this->instance[$id]);
+        return $this->bind;
     }
     
-    /*---------------------------------------------- Singleton ----------------------------------------------*/
-    /**
-     * @return static
-     */
-    public static function getInstance()
-    {
-        if (!$instance = &self::$registers[static::class]) {
-            $instance = new static();
-        }
-        return $instance;
-        
-    }
-    private function __construct() { }
-    private function __clone() { }
+    
 }

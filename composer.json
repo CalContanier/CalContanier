@@ -5,7 +5,7 @@
     "authors": [
         {
             "name": "沧澜",
-            "email": "lryhuimeng@163.cn"
+            "email": "lryhuimeng@163.com"
         }
     ],
     "keywords": [
@@ -24,13 +24,12 @@
     },
     "autoload": {
         "psr-4": {
-            "CalContainer\\": "src",
-            "CalContainer\\Examples\\": "examples"
+            "CalContainer\\": "src"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "CalContainer\\Test\\": ["test", "testClass"]
+            "CalContainer\\Tests\\": ["tests", "testClass"]
         }
     }
 }
