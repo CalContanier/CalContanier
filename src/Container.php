@@ -48,17 +48,14 @@ class Container extends AbsSingleton
      * @param array $runParams
      * @return mixed
      * @throws ReflectionException
+     * @throws ContainerException
      */
     public function call($abstract, $method, array $runParams = [])
     {
         $refClass = new ReflectionClass($abstract);
-        $refClass->hasMethod($method) || (function () use ($refClass, $method) {
-            ContainerException::throw("Uncaught Error: Call to undefined method " . $refClass->getName() . "::$method .");
-        })();
+        $refClass->hasMethod($method) || ContainerException::throw("Uncaught Error: Call to undefined method " . $refClass->getName() . "::$method .");;
         $reflectionMethod = $refClass->getMethod($method);
-        $reflectionMethod->isPublic() || (function () use ($method) {
-            ContainerException::throw("$method must be public.");
-        })();
+        $reflectionMethod->isPublic() || ContainerException::throw("$method must be public.");
         $params = $this->getMethodParams($reflectionMethod, $refClass, $method, $runParams);
         return $abstract->{$method}(... $params);
     }
@@ -113,9 +110,7 @@ class Container extends AbsSingleton
         if (isset($tmp[$className])) {
             return $tmp[$className];
         }
-        array_key_exists($className, $tmp) && (function () {
-            ContainerException::throw('can not create a circular dependencies class object.');
-        })();
+        array_key_exists($className, $tmp) && ContainerException::throw('can not create a circular dependencies class object.');
         $instance = &$tmp[$className];
         
         // todo: flag 2: get method && parse params
@@ -123,14 +118,11 @@ class Container extends AbsSingleton
         if ($refClass->isInterface() || $refClass->isAbstract()) {
             ContainerException::throw('can not create a class in interface or abstract.');
         } elseif ($refClass->getName() === Closure::class) {
-            return function () {
-            };
+            return function () { };
         }
         if ($refClass->hasMethod('__construct')) {
             $reflectionMethod = $refClass->getMethod('__construct');
-            $reflectionMethod->isPublic() || (function () {
-                ContainerException::throw("can not automatically create the class object, __construct must be public.");
-            })();
+            $reflectionMethod->isPublic() || ContainerException::throw("can not automatically create the class object, __construct must be public.");
             $_constructParams = $this->getMethodParams($reflectionMethod, $refClass, '__construct', $runParams);
         }
         
@@ -151,8 +143,15 @@ class Container extends AbsSingleton
         } elseif ($param->isDefaultValueAvailable()) {
             return $param->getDefaultValue();
         } elseif ($param->getType()) {
-            return ['string' => '', 'int' => 0, 'array' => [], 'bool' => false, 'float' => 0.0, 'iterable' => [], 'callable' => function () {
-                }][$param->getType()->getName()] ?? null;
+            return [
+                'string' => '',
+                'int' => 0,
+                'array' => [],
+                'bool' => false,
+                'float' => 0.0,
+                'iterable' => [],
+                'callable' => function () {}
+            ][$param->getType()->getName()] ?? null;
         } else {
             return null;
         }

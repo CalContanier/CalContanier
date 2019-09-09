@@ -9,7 +9,6 @@ namespace CalContainer\Register;
 use CalContainer\Exceptions\InstanceNotFoundException;
 use CalContainer\Exceptions\RegisterException;
 use Exception;
-use Psr\Container\ContainerExceptionInterface;
 
 class RegisterContact
 {
@@ -17,7 +16,9 @@ class RegisterContact
     /**
      * Contract registration constants
      */
-    const   REG_METHOD = 'method', REG_CLASS = 'class', REG_NAMESPACE = 'namespace';
+    const   REG_METHOD = 'method',
+            REG_CLASS = 'class',
+            REG_NAMESPACE = 'namespace';
     /**
      * @var array
      */
@@ -35,9 +36,7 @@ class RegisterContact
     public function adapt($contact, string $abstract, $instance)
     {
         if (is_array($contact)) {
-            count($contact) <> 2 || (function () {
-                RegisterException::throw('can not binding contract, error: $contact parameter length error in array.');
-            })();
+            count($contact) <> 2 || RegisterException::throw('can not binding contract, error: $contact parameter length error in array.');
             $this->method($contact, $abstract, $instance);
         } else if (is_string($contact)) {
             if (($contacts = explode('@', $contact)) && count($contacts) == 2) {
@@ -100,7 +99,7 @@ class RegisterContact
      * @return bool|mixed|null
      * @throws Exception
      */
-    public function getInAll(string $abstract, string $namespace= null, string $class = null, string $method = null, $default = null)
+    public function getInAll(string $abstract, string $namespace = null, string $class = null, string $method = null, $default = null)
     {
         if ($class && $method && $this->has(self::REG_METHOD, [$class, $method], $abstract)) {
             return $this->getIn(self::REG_METHOD, [$class, $method], $abstract);

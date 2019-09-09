@@ -7,7 +7,9 @@
 namespace CalContainer\Register;
 
 
-class RegisterBind
+use CalContainer\Contracts\RegisterInterface;
+
+class RegisterBind implements RegisterInterface
 {
     /**
      * @var array
@@ -26,19 +28,19 @@ class RegisterBind
     }
     
     /**
-     * @param string $abstract
+     * @param mixed $abstract
      * @return bool
      */
-    public function has(string $abstract)
+    public function has($abstract)
     {
         return isset($this->binding[$abstract]);
     }
     
     /**
-     * @param string $abstract
+     * @param mixed $abstract
      * @return mixed|null
      */
-    public function get(string $abstract)
+    public function get($abstract)
     {
         return $this->binding[$abstract] ?? null;
     }
