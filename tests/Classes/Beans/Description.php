@@ -1,0 +1,15 @@
+<?php
+/**
+ * Author: 沧澜
+ * Date: 2019-09-10
+ */
+
+namespace CalContainer\Tests\Classes\Beans;
+
+/**
+ * @Annotation
+ */
+class Description
+{
+    public $desc = 'default';
+}

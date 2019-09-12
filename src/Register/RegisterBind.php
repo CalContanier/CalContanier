@@ -17,6 +17,11 @@ class RegisterBind implements RegisterInterface
     protected $binding = [];
     
     /**
+     * @var array
+     */
+    protected $instanceCaches = [];
+    
+    /**
      * @param string $abstract
      * @param mixed $instance
      * @return $this
@@ -25,6 +30,15 @@ class RegisterBind implements RegisterInterface
     {
         $this->binding[$abstract] = $instance;
         return $this;
+    }
+    
+    /**
+     * @param string $abstract
+     * @param $instance
+     */
+    public function delay(string $abstract, $instance)
+    {
+    
     }
     
     /**

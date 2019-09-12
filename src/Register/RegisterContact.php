@@ -16,9 +16,7 @@ class RegisterContact
     /**
      * Contract registration constants
      */
-    const   REG_METHOD = 'method',
-            REG_CLASS = 'class',
-            REG_NAMESPACE = 'namespace';
+    const   REG_METHOD = 'method', REG_CLASS = 'class', REG_NAMESPACE = 'namespace';
     /**
      * @var array
      */
@@ -65,6 +63,19 @@ class RegisterContact
     }
     
     /**
+     * @param string|array $contact
+     * @param array $list
+     * @return $this
+     */
+    public function methods($contact, array $list)
+    {
+        foreach ($list as $abstract => $instance) {
+            $this->method($contact, $abstract, $instance);
+        }
+        return $this;
+    }
+    
+    /**
      * @param string $class
      * @param string $abstract
      * @param mixed $instance
@@ -77,6 +88,19 @@ class RegisterContact
     }
     
     /**
+     * @param string $class
+     * @param array $list
+     * @return $this
+     */
+    public function classes(string $class, array $list)
+    {
+        foreach ($list as $abstract => $instance) {
+            $this->class($class, $abstract, $instance);
+        }
+        return $this;
+    }
+    
+    /**
      * @param string $namespace
      * @param string $abstract
      * @param mixed $instance
@@ -85,6 +109,19 @@ class RegisterContact
     public function namespace(string $namespace, string $abstract, $instance)
     {
         $this->namespace[$namespace][$abstract] = $instance;
+        return $this;
+    }
+    
+    /**
+     * @param string $namespace
+     * @param array $list
+     * @return $this
+     */
+    public function namespaces(string $namespace, array $list)
+    {
+        foreach ($list as $abstract => $instance) {
+            $this->namespace($namespace, $abstract, $instance);
+        }
         return $this;
     }
     

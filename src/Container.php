@@ -8,14 +8,17 @@
 
 namespace CalContainer;
 
+use CalContainer\Components\TypeParser;
 use CalContainer\Contracts\AbsSingleton;
+use CalContainer\Contracts\TypeParserInterface;
 use CalContainer\Exceptions\ContainerException;
 use CalContainer\Register\Register;
 use Closure;
 use Exception;
 use ReflectionClass;
 use ReflectionException;
-use ReflectionMethod;
+use ReflectionFunction;
+use ReflectionFunctionAbstract;
 use ReflectionParameter;
 
 class Container extends AbsSingleton
@@ -27,11 +30,17 @@ class Container extends AbsSingleton
     protected $register;
     
     /**
+     * @var TypeParserInterface
+     */
+    protected $typeParser;
+    
+    /**
      * singleton init
      */
     protected function init()
     {
         $this->register = Register::getInstance();
+        $this->typeParser = new TypeParser();
     }
     
     /**
@@ -43,26 +52,37 @@ class Container extends AbsSingleton
     }
     
     /**
-     * @param object/string $abstract
+     * @param $abstract
      * @param string $method
      * @param array $runParams
+     * @param int $options
      * @return mixed
-     * @throws ReflectionException
      * @throws ContainerException
+     * @throws ReflectionException
      */
-    public function call($abstract, $method, array $runParams = [])
+    public function call($abstract, $method, array $runParams = [], int $options = 0)
     {
         $refClass = new ReflectionClass($abstract);
         $refClass->hasMethod($method) || ContainerException::throw("Uncaught Error: Call to undefined method " . $refClass->getName() . "::$method .");;
-        $reflectionMethod = $refClass->getMethod($method);
-        $reflectionMethod->isPublic() || ContainerException::throw("$method must be public.");
-        $params = $this->getMethodParams($reflectionMethod, $refClass, $method, $runParams);
-        return $abstract->{$method}(... $params);
+        ($reflectionMethod = $refClass->getMethod($method))->isPublic() || ContainerException::throw("$method must be public.");
+        return $abstract->{$method}(... $this->getMethodParams($reflectionMethod, $refClass, $method, $runParams, $options));
+    }
+    
+    /**
+     * @param Closure $callable
+     * @param array $runParams
+     * @param int $options
+     * @return mixed
+     * @throws ReflectionException
+     */
+    public function callCallable(Closure $callable, array $runParams = [], int $options = 0)
+    {
+        return call_user_func_array($callable, $this->getMethodParams(new ReflectionFunction($callable), new ReflectionClass($callable), '', $runParams, $options));
     }
     
     /**
      * @param string|object|ReflectionClass $abstract
-     * @return mixed|null
+     * @return mixed
      * @throws ReflectionException
      * @throws Exception
      */
@@ -71,8 +91,7 @@ class Container extends AbsSingleton
         $refClass = $abstract instanceof ReflectionClass ? $abstract : new ReflectionClass($abstract);
         
         // get in bind
-        $bind = $this->register->bind();
-        if ($bind->has($refClass->getName())) {
+        if (($bind = $this->register->bind())->has($refClass->getName())) {
             return $bind->get($refClass->getName());
         }
         
@@ -85,11 +104,12 @@ class Container extends AbsSingleton
      * create a new object
      * @param string $abstract
      * @param array $params
-     * @return Closure|object
-     * @throws ReflectionException
+     * @param int $options
+     * @return mixed
      * @throws ContainerException
+     * @throws ReflectionException
      */
-    public function create($abstract, array $params = [])
+    public function create($abstract, array $params = [], int $options = 0)
     {
         return $this->createInstance($abstract, $params);
     }
@@ -98,22 +118,23 @@ class Container extends AbsSingleton
      * create new instance
      * @param string|ReflectionClass $abstract class
      * @param array $runParams for the first level only
+     * @param int $options
      * @param array $tmp temporary class object
      * @return object
-     * @throws ReflectionException
      * @throws ContainerException
+     * @throws ReflectionException
      */
-    protected function createInstance($abstract, array $runParams = [], array $tmp = [])
+    protected function createInstance($abstract, array $runParams = [], int $options = 0, array $tmp = [])
     {
         $className = $abstract instanceof ReflectionClass ? $abstract->getName() : $abstract;
-        // todo: flag 1: check
+        // check: $tmp[$className] is not null
         if (isset($tmp[$className])) {
             return $tmp[$className];
         }
         array_key_exists($className, $tmp) && ContainerException::throw('can not create a circular dependencies class object.');
+        // create: tmp([ $className => &null])
         $instance = &$tmp[$className];
         
-        // todo: flag 2: get method && parse params
         $refClass = $abstract instanceof ReflectionClass ? $abstract : new ReflectionClass($abstract);
         if ($refClass->isInterface() || $refClass->isAbstract()) {
             ContainerException::throw('can not create a class in interface or abstract.');
@@ -123,10 +144,9 @@ class Container extends AbsSingleton
         if ($refClass->hasMethod('__construct')) {
             $reflectionMethod = $refClass->getMethod('__construct');
             $reflectionMethod->isPublic() || ContainerException::throw("can not automatically create the class object, __construct must be public.");
-            $_constructParams = $this->getMethodParams($reflectionMethod, $refClass, '__construct', $runParams);
+            $_constructParams = $this->getMethodParams($reflectionMethod, $refClass, '__construct', $runParams, $options);
         }
         
-        // todo: flag 3: make instance && bind to tmp
         return $instance = $refClass->newInstance(... ($_constructParams ?? []));
     }
     
@@ -143,15 +163,7 @@ class Container extends AbsSingleton
         } elseif ($param->isDefaultValueAvailable()) {
             return $param->getDefaultValue();
         } elseif ($param->getType()) {
-            return [
-                'string' => '',
-                'int' => 0,
-                'array' => [],
-                'bool' => false,
-                'float' => 0.0,
-                'iterable' => [],
-                'callable' => function () {}
-            ][$param->getType()->getName()] ?? null;
+            return $this->typeParser->default($param->getType()->getName());
         } else {
             return null;
         }
@@ -159,24 +171,36 @@ class Container extends AbsSingleton
     
     /**
      * get method params
-     * @param ReflectionMethod $reflectionMethod
+     * @param ReflectionFunctionAbstract $refMethod
      * @param ReflectionClass $refClass
      * @param string $method
      * @param array $runParams
+     * @param int $options
      * @return array
      */
-    private function getMethodParams(ReflectionMethod $reflectionMethod, ReflectionClass $refClass, string $method, array $runParams = [])
+    private function getMethodParams(ReflectionFunctionAbstract $refMethod, ReflectionClass $refClass, string $method, array $runParams = [], int $options = 0)
     {
-        return array_map(function (ReflectionParameter $param) use ($refClass, $method, $runParams) {
+        
+        
+        
+        return array_map(function (ReflectionParameter $param) use ($refClass, $method, $runParams, $options, &$refMap) {
             // get in $params
+            array_map(function () {
+            
+            }, $runParams);
             
             // get in contact and bind or create new instance
             if (($result = $this->paramsHandle($param)) instanceof ReflectionClass) {
-                return $this->register->contact()->getInAll($param->getClass()->getName(), $refClass->getNamespaceName(), $refClass->getName(), $method) ?? $this->get($result);
+                $instance = $this->register->contact()->getInAll($param->getClass()->getName(), $refClass->getNamespaceName(), $refClass->getName(), $method) ?? $this->get($result);
+                if (is_string($instance) && class_exists($instance)) {
+                    return $refMap[$instance] ?? ($refMap[$instance] = $this->create($instance));
+                } else {
+                    return $instance;
+                }
             } else {
                 return $result;
             }
-        }, $reflectionMethod->getParameters());
+        }, $refMethod->getParameters());
     }
     
 }
