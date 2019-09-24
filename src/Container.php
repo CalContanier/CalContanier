@@ -181,6 +181,9 @@ class Container extends AbsSingleton
      */
     private function getMethodParams(ReflectionFunctionAbstract $refMethod, ReflectionClass $refClass, string $method, array $runParams = [], int $options = 0)
     {
+        if(!$methodParameters = $refMethod->getParameters()) {
+            return [];
+        }
         if ($this->paramsParserClass && is_subclass_of($this->paramsParserClass, ParamParserInterface::class)) {
             $paramParser = new $this->paramsParserClass();
         } else {
@@ -205,7 +208,7 @@ class Container extends AbsSingleton
             } else {
                 return $defaultValue;
             }
-        }, $refMethod->getParameters());
+        }, $methodParameters);
     }
     
     /*---------------------------------------------- set ----------------------------------------------*/

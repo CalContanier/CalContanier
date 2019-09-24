@@ -103,7 +103,7 @@ class ParamParser implements ParamParserInterface
         if (is_string($key)) {
             $this->objects['contact'][$key] = $value;
         } else {
-            $this->objects['list'][get_class($value)] = $value;
+            $this->objects['list'][is_object($value) ? get_class($value) : $value] = $value;
         }
     }
     
