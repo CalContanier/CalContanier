@@ -8,6 +8,8 @@ namespace CalContainer\Register;
 
 use CalContainer\Exceptions\InstanceNotFoundException;
 use CalContainer\Exceptions\RegisterException;
+use CalContainer\Utils\ClosureUtil;
+use Closure;
 use Exception;
 
 class RegisterContact
@@ -139,13 +141,13 @@ class RegisterContact
     public function getInAll(string $abstract, string $namespace = null, string $class = null, string $method = null, $default = null)
     {
         if ($class && $method && $this->has(self::REG_METHOD, [$class, $method], $abstract)) {
-            return $this->getIn(self::REG_METHOD, [$class, $method], $abstract);
+            return $this->getIn(self::REG_METHOD, [$class, $method], $abstract, $default);
         } elseif ($class && $this->has(self::REG_CLASS, $class, $abstract)) {
-            return $this->getIn(self::REG_CLASS, $class, $abstract);
+            return $this->getIn(self::REG_CLASS, $class, $abstract, $default);
         } elseif ($namespace && $this->has(self::REG_NAMESPACE, $namespace, $abstract)) {
-            return $this->getIn(self::REG_NAMESPACE, $namespace, $abstract);
+            return $this->getIn(self::REG_NAMESPACE, $namespace, $abstract, $default);
         } else {
-            return $default;
+            return ClosureUtil::checkRun($default);
         }
     }
     
@@ -165,12 +167,13 @@ class RegisterContact
      * @param string $property
      * @param mixed $contact
      * @param string $abstract
+     * @param Closure|mixed $default
      * @return mixed|null
      * @throws Exception
      */
-    public function getIn(string $property, $contact, string $abstract)
+    public function getIn(string $property, $contact, string $abstract, $default = null)
     {
-        return $this->get($property)[implode("@", (array)$contact)][$abstract] ?? null;
+        return $this->get($property)[implode("@", (array)$contact)][$abstract] ?? ClosureUtil::checkRun($default);
     }
     
     /**

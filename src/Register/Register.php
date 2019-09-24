@@ -38,17 +38,17 @@ class Register extends AbsSingleton
     /**
      * @return RegisterContact
      */
-    public function contact()
+    public static function contact()
     {
-        return $this->contact;
+        return static::getInstance()->contact;
     }
     
     /**
      * @return RegisterBind
      */
-    public function bind()
+    public static function bind()
     {
-        return $this->bind;
+        return static::getInstance()->bind;
     }
     
     

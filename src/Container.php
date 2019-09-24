@@ -8,11 +8,15 @@
 
 namespace CalContainer;
 
+use CalContainer\Components\ParamParser;
 use CalContainer\Components\TypeParser;
 use CalContainer\Contracts\AbsSingleton;
+use CalContainer\Contracts\ParamParserInterface;
 use CalContainer\Contracts\TypeParserInterface;
 use CalContainer\Exceptions\ContainerException;
 use CalContainer\Register\Register;
+use CalContainer\Register\RegisterBind;
+use CalContainer\Register\RegisterContact;
 use Closure;
 use Exception;
 use ReflectionClass;
@@ -25,21 +29,21 @@ class Container extends AbsSingleton
 {
     
     /**
-     * @var Register
-     */
-    protected $register;
-    
-    /**
      * @var TypeParserInterface
      */
     protected $typeParser;
+    
+    /**
+     * ParamParserInterface class
+     * @var string
+     */
+    protected $paramsParserClass;
     
     /**
      * singleton init
      */
     protected function init()
     {
-        $this->register = Register::getInstance();
         $this->typeParser = new TypeParser();
     }
     
@@ -48,7 +52,23 @@ class Container extends AbsSingleton
      */
     public static function register()
     {
-        return static::getInstance()->register;
+        return Register::getInstance();
+    }
+    
+    /**
+     * @return RegisterContact
+     */
+    public static function contactRegister()
+    {
+        return Register::contact();
+    }
+    
+    /**
+     * @return RegisterBind
+     */
+    public static function bindRegister()
+    {
+        return Register::bind();
     }
     
     /**
@@ -91,7 +111,7 @@ class Container extends AbsSingleton
         $refClass = $abstract instanceof ReflectionClass ? $abstract : new ReflectionClass($abstract);
         
         // get in bind
-        if (($bind = $this->register->bind())->has($refClass->getName())) {
+        if (($bind = Register::bind())->has($refClass->getName())) {
             return $bind->get($refClass->getName());
         }
         
@@ -151,25 +171,6 @@ class Container extends AbsSingleton
     }
     
     /**
-     * parse
-     * @param ReflectionParameter $param
-     * @return mixed|ReflectionClass|null
-     * @throws ReflectionException
-     */
-    private function paramsHandle(ReflectionParameter $param)
-    {
-        if ($param->getClass()) {
-            return $param->getClass();
-        } elseif ($param->isDefaultValueAvailable()) {
-            return $param->getDefaultValue();
-        } elseif ($param->getType()) {
-            return $this->typeParser->default($param->getType()->getName());
-        } else {
-            return null;
-        }
-    }
-    
-    /**
      * get method params
      * @param ReflectionFunctionAbstract $refMethod
      * @param ReflectionClass $refClass
@@ -180,27 +181,43 @@ class Container extends AbsSingleton
      */
     private function getMethodParams(ReflectionFunctionAbstract $refMethod, ReflectionClass $refClass, string $method, array $runParams = [], int $options = 0)
     {
-        
-        
-        
-        return array_map(function (ReflectionParameter $param) use ($refClass, $method, $runParams, $options, &$refMap) {
-            // get in $params
-            array_map(function () {
-            
-            }, $runParams);
-            
-            // get in contact and bind or create new instance
-            if (($result = $this->paramsHandle($param)) instanceof ReflectionClass) {
-                $instance = $this->register->contact()->getInAll($param->getClass()->getName(), $refClass->getNamespaceName(), $refClass->getName(), $method) ?? $this->get($result);
+        if ($this->paramsParserClass && is_subclass_of($this->paramsParserClass, ParamParserInterface::class)) {
+            $paramParser = new $this->paramsParserClass();
+        } else {
+            $paramParser = new ParamParser();
+        }
+        $paramParser->parse($runParams);
+        return array_map(function (ReflectionParameter $param) use ($refClass, $method, $options, &$refMap, $paramParser) {
+            $defaultValue = $param->isDefaultValueAvailable() ? $param->getDefaultValue() : null;
+            if (($class = $param->getClass()) && $class instanceof ReflectionClass) {
+                $instance = $paramParser->getObject($class->getName(), $param->getName(), function () use ($class, $refClass, $method) {
+                    return Register::contact()->getInAll($class->getName(), $refClass->getNamespaceName(), $refClass->getName(), $method, function () use ($class) {
+                        return $this->get($class);
+                    });
+                });
                 if (is_string($instance) && class_exists($instance)) {
-                    return $refMap[$instance] ?? ($refMap[$instance] = $this->create($instance));
+                    return $refMap[$instance] ?? $refMap[$instance] = $this->create($instance);
                 } else {
                     return $instance;
                 }
+            } else if ($param->getType()) {
+                return $paramParser->getValue($param->getType(), $param->getName(), $this->typeParser->default($param->getType()->getName(), $defaultValue));
             } else {
-                return $result;
+                return $defaultValue;
             }
         }, $refMethod->getParameters());
+    }
+    
+    /*---------------------------------------------- set ----------------------------------------------*/
+    
+    /**
+     * @param string $paramsParserClass
+     * @return $this
+     */
+    public function paramParser(string $paramsParserClass)
+    {
+        $this->paramsParserClass = $paramsParserClass;
+        return $this;
     }
     
 }
