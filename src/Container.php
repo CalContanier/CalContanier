@@ -19,13 +19,14 @@ use CalContainer\Register\RegisterBind;
 use CalContainer\Register\RegisterContact;
 use Closure;
 use Exception;
+use Psr\Container\ContainerInterface;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionFunction;
 use ReflectionFunctionAbstract;
 use ReflectionParameter;
 
-class Container extends AbsSingleton
+class Container extends AbsSingleton implements ContainerInterface
 {
     
     /**
@@ -101,6 +102,22 @@ class Container extends AbsSingleton
     }
     
     /**
+     * Returns true if the container can return an entry for the given identifier.
+     * Returns false otherwise.
+     *
+     * `has($id)` returning true does not mean that `get($id)` will not throw an exception.
+     * It does however mean that `get($id)` will not throw a `NotFoundExceptionInterface`.
+     *
+     * @param string $id Identifier of the entry to look for.
+     *
+     * @return bool
+     */
+    public function has($id)
+    {
+        return Register::bind()->has($id);
+    }
+    
+    /**
      * @param string|object|ReflectionClass $abstract
      * @return mixed
      * @throws ReflectionException
@@ -109,14 +126,10 @@ class Container extends AbsSingleton
     public function get($abstract)
     {
         $refClass = $abstract instanceof ReflectionClass ? $abstract : new ReflectionClass($abstract);
-        
-        // get in bind
-        if (($bind = Register::bind())->has($refClass->getName())) {
-            return $bind->get($refClass->getName());
+        if (Register::bind()->has($refClass->getName())) {
+            return Register::bind()->get($refClass->getName());
         }
-        
-        // to create
-        return $this->create($abstract);
+        return $this->create($refClass);
     }
     
     
@@ -131,7 +144,7 @@ class Container extends AbsSingleton
      */
     public function create($abstract, array $params = [], int $options = 0)
     {
-        return $this->createInstance($abstract, $params);
+        return $this->createInstance($abstract, $params, $options);
     }
     
     /**
@@ -163,8 +176,17 @@ class Container extends AbsSingleton
         }
         if ($refClass->hasMethod('__construct')) {
             $reflectionMethod = $refClass->getMethod('__construct');
-            $reflectionMethod->isPublic() || ContainerException::throw("can not automatically create the class object, __construct must be public.");
-            $_constructParams = $this->getMethodParams($reflectionMethod, $refClass, '__construct', $runParams, $options);
+            if ($reflectionMethod->isPublic()) {
+                $_constructParams = $this->getMethodParams($reflectionMethod, $refClass, '__construct', $runParams, $options);
+            } else if ($refClass->hasMethod('getInstance')) {
+                $reflectionMethod = $refClass->getMethod('getInstance');
+                if ($reflectionMethod->isPublic() && $reflectionMethod->isStatic()) {
+                    $_constructParams = $this->getMethodParams($reflectionMethod, $refClass, 'getInstance', $runParams, $options);
+                    return $instance = $refClass->getName()::getInstance(... $_constructParams);
+                }
+            } else {
+                ContainerException::throw("can not automatically create the class object, __construct must be public.");
+            }
         }
         
         return $instance = $refClass->newInstance(... ($_constructParams ?? []));
@@ -179,7 +201,7 @@ class Container extends AbsSingleton
      * @param int $options
      * @return array
      */
-    private function getMethodParams(ReflectionFunctionAbstract $refMethod, ReflectionClass $refClass, string $method, array $runParams = [], int $options = 0)
+    private function getMethodParams(ReflectionFunctionAbstract $refMethod, ReflectionClass $refClass, string $method, array $runParams = [], int $options = 0): array
     {
         if(!$methodParameters = $refMethod->getParameters()) {
             return [];
@@ -208,7 +230,7 @@ class Container extends AbsSingleton
             } else {
                 return $defaultValue;
             }
-        }, $methodParameters);
+        }, $methodParameters) ?? [];
     }
     
     /*---------------------------------------------- set ----------------------------------------------*/

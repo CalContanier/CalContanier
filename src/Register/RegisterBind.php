@@ -23,12 +23,16 @@ class RegisterBind implements RegisterInterface
     
     /**
      * @param string $abstract
-     * @param mixed $instance
+     * @param object|mixed $instance
      * @return $this
      */
-    public function bind(string $abstract, $instance)
+    public function bind($abstract, $instance = null)
     {
-        $this->binding[$abstract] = $instance;
+        if (is_object($abstract)) {
+            $this->binding[get_class($abstract)] = $abstract;
+        } else {
+            $this->binding[$abstract] = $instance;
+        }
         return $this;
     }
     
