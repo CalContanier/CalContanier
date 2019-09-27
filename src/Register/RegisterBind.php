@@ -74,7 +74,7 @@ class RegisterBind implements RegisterInterface
      */
     public function has($abstract)
     {
-        return isset($this->binds[$abstract]);
+        return isset($this->binds[$abstract]) || isset($this->creates[$abstract]);
     }
     
     /**
