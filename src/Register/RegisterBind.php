@@ -8,41 +8,64 @@ namespace CalContainer\Register;
 
 
 use CalContainer\Contracts\RegisterInterface;
+use Closure;
 
 class RegisterBind implements RegisterInterface
 {
     /**
      * @var array
      */
-    protected $binding = [];
+    protected $binds = [];
     
     /**
      * @var array
      */
-    protected $instanceCaches = [];
+    protected $creates = [];
+    
+    /**
+     * @var array
+     */
+    protected $caches = [];
     
     /**
      * @param string $abstract
-     * @param object|mixed $instance
+     * @param object|Closure|mixed $instance
      * @return $this
      */
     public function bind($abstract, $instance = null)
     {
         if (is_object($abstract)) {
-            $this->binding[get_class($abstract)] = $abstract;
+            $this->binds[get_class($abstract)] = $abstract;
         } else {
-            $this->binding[$abstract] = $instance;
+            $this->binds[$abstract] = $instance;
         }
         return $this;
     }
     
     /**
      * @param string $abstract
-     * @param $instance
+     * @param Closure $instance
+     * @return RegisterBind
      */
-    public function delay(string $abstract, $instance)
+    public function delay(string $abstract, Closure $instance)
     {
+        $this->binds[$abstract] = $instance;
+        return $this;
+    }
     
+    /**
+     * @param string $abstract
+     * @param object|Closure|mixed $instance
+     * @return RegisterBind
+     */
+    public function create(string $abstract, $instance = null)
+    {
+        if (is_object($abstract)) {
+            $this->creates[get_class($abstract)] = $abstract;
+        } else {
+            $this->creates[$abstract] = $instance;
+        }
+        return $this;
     }
     
     /**
@@ -51,7 +74,7 @@ class RegisterBind implements RegisterInterface
      */
     public function has($abstract)
     {
-        return isset($this->binding[$abstract]);
+        return isset($this->binds[$abstract]);
     }
     
     /**
@@ -60,16 +83,58 @@ class RegisterBind implements RegisterInterface
      */
     public function get($abstract)
     {
-        return $this->binding[$abstract] ?? null;
+        if (isset($this->caches[$abstract])) {
+            return $this->caches[$abstract];
+        } elseif (isset($this->binds[$abstract])){
+            return $this->caches[$abstract] = $this->getRegisterInstance($this->binds[$abstract]);
+        } else if (isset($this->creates[$abstract])) {
+            return $this->getRegisterInstance($this->creates[$abstract]);
+        } else {
+            return null;
+        }
+    }
+    
+    /*---------------------------------------------- protocted ----------------------------------------------*/
+    
+    /**
+     * @param object|Closure|string|mixed $instance
+     * @return mixed
+     */
+    protected function getRegisterInstance($instance)
+    {
+        if (is_callable($instance)) {
+            return call_user_func($instance);
+        } elseif (is_string($instance) && class_exists($instance)) {
+            return new $instance();
+        } else {
+            return $instance;
+        }
+    }
+    
+    /*---------------------------------------------- get ----------------------------------------------*/
+    
+    /**
+     * @return array
+     */
+    public function getBinds(): array
+    {
+        return $this->binds;
     }
     
     /**
      * @return array
      */
-    public function getBind(): array
+    public function getCaches(): array
     {
-        return $this->binding;
+        return $this->caches;
     }
     
+    /**
+     * @return array
+     */
+    public function getCreates(): array
+    {
+        return $this->creates;
+    }
     
 }
