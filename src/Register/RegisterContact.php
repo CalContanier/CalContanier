@@ -27,6 +27,12 @@ class RegisterContact
     protected $namespace = [];
     
     /**
+     * instance cache
+     * @var array
+     */
+    protected $caches = [];
+    
+    /**
      * @param string|array $contact
      * @param string $abstract
      * @param object $instance
@@ -173,7 +179,15 @@ class RegisterContact
      */
     public function getIn(string $property, $contact, string $abstract, $default = null)
     {
-        return $this->get($property)[implode("@", (array)$contact)][$abstract] ?? ClosureUtil::checkRun($default);
+        $contactName = implode("@", (array)$contact);
+        $cacheName = $contactName.'-'.$abstract;
+        if ($cache = &$this->caches[$cacheName]) {
+            return $cache;
+        } else if ($instance = $this->get($property)[$contactName][$abstract]) {
+            return $cache = $this->getRegisterInstance($instance);
+        } else {
+            return $cache =  ClosureUtil::checkRun($default);
+        }
     }
     
     /**
@@ -187,6 +201,22 @@ class RegisterContact
             return $this->{$property};
         } else {
             InstanceNotFoundException::throw("can not get any values in $property key.");
+        }
+    }
+    
+    
+    /**
+     * @param object|Closure|string|mixed $instance
+     * @return mixed
+     */
+    protected function getRegisterInstance($instance)
+    {
+        if (is_callable($instance)) {
+            return call_user_func($instance);
+        } elseif (is_string($instance) && class_exists($instance)) {
+            return new $instance();
+        } else {
+            return $instance;
         }
     }
     
