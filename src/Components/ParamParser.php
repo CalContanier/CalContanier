@@ -123,7 +123,11 @@ class ParamParser implements ParamParserInterface
         if (is_string($key)) {
             $this->values['contact'][$key] = $value;
         } else {
-            $this->values['list'][gettype($value)] = $value;
+            if(($type = gettype($value)) == 'integer') {
+                $this->values['list']['int'][] = $value;
+            } else {
+                $this->values['list'][$type][] = $value;
+            }
         }
     }
     
