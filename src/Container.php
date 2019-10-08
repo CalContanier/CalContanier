@@ -73,7 +73,7 @@ class Container extends AbsSingleton implements ContainerInterface
     }
     
     /**
-     * @param $abstract
+     * @param object|string $abstract
      * @param string $method
      * @param array $runParams
      * @param int $options
@@ -86,6 +86,7 @@ class Container extends AbsSingleton implements ContainerInterface
         $refClass = new ReflectionClass($abstract);
         $refClass->hasMethod($method) || ContainerException::throw("Uncaught Error: Call to undefined method " . $refClass->getName() . "::$method .");;
         ($reflectionMethod = $refClass->getMethod($method))->isPublic() || ContainerException::throw("$method must be public.");
+        $abstract = is_object($abstract) ? $abstract : $this->create($abstract);
         return $abstract->{$method}(... $this->getMethodParams($reflectionMethod, $refClass, $method, $runParams, $options));
     }
     
