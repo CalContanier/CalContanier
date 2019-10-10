@@ -211,7 +211,7 @@ class RegisterContact
      */
     protected function getRegisterInstance($instance)
     {
-        if (is_callable($instance)) {
+        if ($instance instanceof Closure) {
             return call_user_func($instance);
         } elseif (is_string($instance) && class_exists($instance)) {
             return new $instance();
