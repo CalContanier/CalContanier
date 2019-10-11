@@ -126,6 +126,13 @@ class Container extends AbsSingleton implements ContainerInterface
      */
     public function get($abstract)
     {
+        if (!class_exists($abstract)) {
+            if (Register::bind()->has($abstract)) {
+                return Register::bind()->get($abstract);
+            } else {
+                return null;
+            }
+        }
         $refClass = $abstract instanceof ReflectionClass ? $abstract : new ReflectionClass($abstract);
         if (Register::bind()->has($refClass->getName())) {
             return Register::bind()->get($refClass->getName());
@@ -216,6 +223,7 @@ class Container extends AbsSingleton implements ContainerInterface
         return array_map(function (ReflectionParameter $param) use ($refClass, $method, $options, &$refMap, $paramParser) {
             $defaultValue = $param->isDefaultValueAvailable() ? $param->getDefaultValue() : null;
             if (($class = $param->getClass()) && $class instanceof ReflectionClass) {
+                /* ======== class(object)数据额类型 判断层级: contact > bind > create > default ======== */
                 $instance = $paramParser->getObject($class->getName(), $param->getName(), function () use ($class, $refClass, $method) {
                     return Register::contact()->getInAll($class->getName(), $refClass->getNamespaceName(), $refClass->getName(), $method, function () use ($class) {
                         return $this->get($class);
@@ -227,9 +235,17 @@ class Container extends AbsSingleton implements ContainerInterface
                     return $instance;
                 }
             } else if ($param->getType()) {
-                return $paramParser->getValue($param->getType(), $param->getName(), $this->typeParser->default($param->getType()->getName(), $defaultValue));
+                /* ======== 其他数据类型声明 判断层级: 运行关联参数(key/value绑定,参数类型绑定) > bind关联参数(key/value绑定关系) > 默认参数 ======== */
+                return $paramParser->getValue($param->getType(), $param->getName(), function () use ($param, $defaultValue) {
+                    if(Register::bind()->has($param->getName())) {
+                        return Register::bind()->get($param->getName());
+                    } else {
+                        return $this->typeParser->default($param->getType()->getName(), $defaultValue);
+                    }
+                });
             } else {
-                return $defaultValue;
+                /* ======== 未声明数据类型 ======== */
+                return Register::bind()->has($param->getName()) ? Register::bind()->get($param->getName()) : $defaultValue;
             }
         }, $methodParameters) ?? [];
     }
