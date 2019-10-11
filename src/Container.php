@@ -126,7 +126,7 @@ class Container extends AbsSingleton implements ContainerInterface
      */
     public function get($abstract)
     {
-        if (!class_exists($abstract)) {
+        if (is_string($abstract) && !class_exists($abstract)) {
             if (Register::bind()->has($abstract)) {
                 return Register::bind()->get($abstract);
             } else {
