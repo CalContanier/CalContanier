@@ -16,6 +16,7 @@ use ReflectionException;
 class ContainerCreateTest extends TestCase
 {
     /**
+     * @dataProvider
      * @throws ContainerException
      * @throws ReflectionException
      */
