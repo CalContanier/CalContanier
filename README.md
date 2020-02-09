@@ -21,7 +21,7 @@ composer require 'cal-container/cal-container'
 * [PSR-11 容器接口](https://learnku.com/index.php/docs/psr/psr-11-container/1621)
 * [PSR-11 容器接口 - 说明文档](https://learnku.com/index.php/docs/psr/psr-11-container-meta/1622)
 
-### 开源项目参考
+### github上现有的php容器部分开源项目
 * [php-di](https://github.com/PHP-DI/PHP-DI)
 * [silexphp/Pimple](https://github.com/silexphp/Pimple)
 * [laravel-container](https://github.com/illuminate/container)
