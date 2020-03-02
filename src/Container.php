@@ -237,11 +237,9 @@ class Container extends AbsSingleton implements ContainerInterface
             } else if ($param->getType()) {
                 /* ======== 其他数据类型声明 判断层级: 运行关联参数(key/value绑定,参数类型绑定) > bind关联参数(key/value绑定关系) > 默认参数 ======== */
                 return $paramParser->getValue($param->getType(), $param->getName(), function () use ($param, $defaultValue) {
-                    if(Register::bind()->has($param->getName())) {
-                        return Register::bind()->get($param->getName());
-                    } else {
-                        return $this->typeParser->default($param->getType()->getName(), $defaultValue);
-                    }
+                    return Register::bind()->has($param->getName()) ?
+                        Register::bind()->get($param->getName()) :
+                        $this->typeParser->default($param->getType()->getName(), $defaultValue);
                 });
             } else {
                 /* ======== 未声明数据类型 ======== */
