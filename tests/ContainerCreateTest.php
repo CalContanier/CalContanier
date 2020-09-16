@@ -37,15 +37,11 @@ class ContainerCreateTest extends TestCase
         $this->assertFalse($container->has(B::class));
         Container::bindRegister()->bind($classB);
         $this->assertTrue($container->has(B::class));
+
+
+
         
     }
-    
-    
-    public function testCreateException()
-    {
-    
-    }
-
 
 
 }
