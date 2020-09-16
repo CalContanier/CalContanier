@@ -13,6 +13,6 @@ interface AnnotationParseInterface
      * @param string $docComment
      * @return mixed
      */
-    public function parse($docComment);
+    public function parse(string $docComment);
     
 }

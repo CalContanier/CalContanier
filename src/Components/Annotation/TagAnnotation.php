@@ -6,34 +6,25 @@
 
 namespace CalContainer\Components\Annotation;
 
-use CalContainer\Contracts\AnnotationParseInterface;
+use CalContainer\Contracts\AbsAnnotationParseInterface;
 
 /**
  * Class TagAnnotation
  * @package CalContainer\Components\Annotation
  */
-class TagAnnotation implements AnnotationParseInterface
+class TagAnnotation extends AbsAnnotationParseInterface
 {
     
     /**
      * @var array
      */
     protected $tags = [];
-    
-    /**
-     * TagAnnotation constructor.
-     * @param $docComment
-     */
-    public function __construct($docComment)
-    {
-        $this->parse($docComment);
-    }
-    
+
     /**
      * @param string $docComment
-     * @return array
+     * @return mixed
      */
-    public function parse($docComment)
+    protected function doParse(string $docComment)
     {
         if ($docComment && $classTags = $this->matchTags($docComment)) {
             foreach ($classTags as $tag => $content) {
@@ -42,7 +33,7 @@ class TagAnnotation implements AnnotationParseInterface
         }
         return $this->tags;
     }
-    
+
     /**
      * 获取所有tag(@key(xxx), @key(method='xxx', prefix='xxx'), ...)
      * @param string $docComment

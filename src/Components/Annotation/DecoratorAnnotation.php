@@ -6,10 +6,13 @@
 
 namespace CalContainer\Components\Annotation;
 
+use CalContainer\Contracts\AbsAnnotationParseInterface;
 
-use CalContainer\Contracts\AnnotationParseInterface;
-
-class DecoratorAnnotation implements AnnotationParseInterface
+/**
+ * Class DecoratorAnnotation
+ * @package CalContainer\Components\Annotation
+ */
+class DecoratorAnnotation extends AbsAnnotationParseInterface
 {
     
     /**
@@ -17,14 +20,14 @@ class DecoratorAnnotation implements AnnotationParseInterface
      * @var array
      */
     protected $decorators = [];
-    
-    
+
     /**
      * @param string $docComment
      * @return mixed
      */
-    public function parse($docComment)
+    protected function doParse(string $docComment)
     {
-    
+        // TODO: Implement doParse() method.
     }
+
 }

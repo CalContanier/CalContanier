@@ -6,19 +6,15 @@
 
 namespace CalContainer\Components\Annotation;
 
-use CalContainer\Contracts\AnnotationParseInterface;
+use CalContainer\Contracts\AbsAnnotationParseInterface;
 
 /**
  * Class Annotation
  * @package CalContainer\Components
  */
-class Annotation implements AnnotationParseInterface
+class Annotation extends AbsAnnotationParseInterface
 {
-    /**
-     * @var string
-     */
-    protected $docComment;
-    
+
     /**
      * 标签tag
      * @var TagAnnotation
@@ -37,25 +33,18 @@ class Annotation implements AnnotationParseInterface
      */
     protected $decorator;
     
+
     /**
-     * Annotation constructor.
-     * @param $docComment
+     * @param string $docComment
+     * @return mixed
      */
-    public function __construct($docComment)
+    protected function doParse(string $docComment)
     {
         $this->docComment = $docComment;
-        $this->parse($docComment);
-    }
-    
-    /**
-     * parse
-     * @param string $docComment
-     */
-    public function parse($docComment)
-    {
         $this->tag = new TagAnnotation($docComment);
+        $this->dataProvider = new DataProviderAnnotation();
     }
-    
+
     /**
      * @return array
      */
@@ -79,5 +68,5 @@ class Annotation implements AnnotationParseInterface
     {
         return $this->decorator;
     }
-    
+
 }

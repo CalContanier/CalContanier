@@ -6,13 +6,13 @@
 
 namespace CalContainer\Components\Annotation;
 
-use CalContainer\Contracts\AnnotationParseInterface;
+use CalContainer\Contracts\AbsAnnotationParseInterface;
 
 /**
  * Class DataProviderAnnotation
  * @package CalContainer\Components\Annotation
  */
-class DataProviderAnnotation implements AnnotationParseInterface
+class DataProviderAnnotation extends AbsAnnotationParseInterface
 {
     /**
      * 参数列表
@@ -21,23 +21,19 @@ class DataProviderAnnotation implements AnnotationParseInterface
     protected $params = [];
     
     /**
-     * @param string $docComment
-     * @return mixed
-     */
-    public function parse($docComment)
-    {
-        if ($docComment) {
-            preg_match('/\*?[ ]*@(dataProvider|dataprovider)[ ]+([\\\w]+)\n/', $docComment, $match);
-        
-        }
-    }
-    
-    /**
      * @return array
      */
     public function getParams(): array
     {
         return $this->params;
     }
-    
+
+    /**
+     * @param string $docComment
+     * @return mixed
+     */
+    protected function doParse(string $docComment)
+    {
+        preg_match('/\*?[ ]*@(dataProvider|dataprovider)[ ]+([\\\w]+)\n/', $docComment, $match);
+    }
 }
