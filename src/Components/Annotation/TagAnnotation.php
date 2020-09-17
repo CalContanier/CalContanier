@@ -14,24 +14,18 @@ use CalContainer\Contracts\AbsAnnotationParseInterface;
  */
 class TagAnnotation extends AbsAnnotationParseInterface
 {
-    
-    /**
-     * @var array
-     */
-    protected $tags = [];
-
     /**
      * @param string $docComment
      * @return mixed
      */
     protected function doParse(string $docComment)
     {
-        if ($docComment && $classTags = $this->matchTags($docComment)) {
+        if ($classTags = $this->matchTags($docComment)) {
             foreach ($classTags as $tag => $content) {
-                $this->tags[$tag] = $content;
+                $tags[] = $content;
             }
+            return $tags ?? [];
         }
-        return $this->tags;
     }
 
     /**
@@ -65,13 +59,5 @@ class TagAnnotation extends AbsAnnotationParseInterface
         } else {
             return $docComment;
         }
-    }
-    
-    /**
-     * @return array
-     */
-    public function getTags(): array
-    {
-        return $this->tags;
     }
 }

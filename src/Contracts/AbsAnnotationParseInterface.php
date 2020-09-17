@@ -24,6 +24,11 @@ abstract class AbsAnnotationParseInterface implements AnnotationParseInterface
     protected $isParse = false;
 
     /**
+     * @var array|mixed
+     */
+    protected $annotations;
+
+    /**
      * TagAnnotation constructor.
      * @param $docComment
      */
@@ -34,14 +39,16 @@ abstract class AbsAnnotationParseInterface implements AnnotationParseInterface
 
     /**
      * @param string $docComment
-     * @return mixed|void
+     * @return mixed|bool
      */
     public function parse(string $docComment)
     {
         $this->docComment = $docComment;
-        $this->isParse = $docComment && $this->doParse($docComment);
+        if ($this->isParse = (bool)$docComment) {
+            return ($this->annotations = $this->doParse($docComment)) ?: false;
+        }
+        return false;
     }
-
 
     /**
      * @return string
@@ -49,6 +56,14 @@ abstract class AbsAnnotationParseInterface implements AnnotationParseInterface
     public function getDocComment(): string
     {
         return $this->docComment;
+    }
+
+    /**
+     * @return array|mixed
+     */
+    public function getAnnotations()
+    {
+        return $this->annotations ?: null;
     }
 
     /**

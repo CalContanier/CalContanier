@@ -27,7 +27,7 @@ class DecoratorAnnotation extends AbsAnnotationParseInterface
      */
     protected function doParse(string $docComment)
     {
-        // TODO: Implement doParse() method.
+        return [$docComment];
     }
 
 }

@@ -6,12 +6,15 @@
 
 namespace CalContainer\Contracts;
 
-
+/**
+ * Interface AnnotationParseInterface
+ * @package CalContainer\Contracts
+ */
 interface AnnotationParseInterface
 {
     /**
      * @param string $docComment
-     * @return mixed
+     * @return mixed|bool
      */
     public function parse(string $docComment);
     
