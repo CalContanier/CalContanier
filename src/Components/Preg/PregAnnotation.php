@@ -22,7 +22,6 @@ class PregAnnotation
         $tagStr = is_array($rules) ? implode("|", $rules) : $rules;
         $tagStr = $tagStr ?: '\w+';
         if (preg_match_all("/\*?[ ]*@($tagStr)[ ]*(\(['\"]?(?:[^()]*?)['\"]?\)|\(?(?:\w+)\)?)?\n/s", $docComment, $match) && isset($match[2])) {
-            dump($match);
             foreach ($match[2] as $index => $content) {
                 $tags[$match[1][$index]] = self::toKeyValues($content);
             }

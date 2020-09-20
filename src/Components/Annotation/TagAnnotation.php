@@ -22,7 +22,6 @@ class TagAnnotation extends AbsAnnotationParseInterface
     protected function doParse(string $docComment)
     {
         if ($classTags = PregAnnotation::matchTags($docComment)) {
-//        if ($classTags = $this->matchTags($docComment)) {
             foreach ($classTags as $tag => $content) {
                 $tags[$tag] = $content;
             }
