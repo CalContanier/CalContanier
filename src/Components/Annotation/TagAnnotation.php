@@ -6,6 +6,7 @@
 
 namespace CalContainer\Components\Annotation;
 
+use CalContainer\Components\Preg\PregAnnotation;
 use CalContainer\Contracts\AbsAnnotationParseInterface;
 
 /**
@@ -20,9 +21,10 @@ class TagAnnotation extends AbsAnnotationParseInterface
      */
     protected function doParse(string $docComment)
     {
-        if ($classTags = $this->matchTags($docComment)) {
+        if ($classTags = PregAnnotation::matchTags($docComment)) {
+//        if ($classTags = $this->matchTags($docComment)) {
             foreach ($classTags as $tag => $content) {
-                $tags[] = $content;
+                $tags[$tag] = $content;
             }
             return $tags ?? [];
         }

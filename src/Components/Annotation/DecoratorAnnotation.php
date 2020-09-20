@@ -23,6 +23,7 @@ class DecoratorAnnotation extends AbsAnnotationParseInterface
 
     /**
      * @param string $docComment
+     * @begin DataProviderAnnotation::begin
      * @return mixed
      */
     protected function doParse(string $docComment)

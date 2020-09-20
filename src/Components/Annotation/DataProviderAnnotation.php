@@ -34,6 +34,6 @@ class DataProviderAnnotation extends AbsAnnotationParseInterface
      */
     protected function doParse(string $docComment)
     {
-        preg_match('/\*?[ ]*@(dataProvider|dataprovider)[ ]+([\\\w]+)\n/', $docComment, $match);
+        preg_match('/\*?[ ]*@(dataProvider|dataprovider|dp)[ ]+([\\\w]+)\n/', $docComment, $match);
     }
 }
