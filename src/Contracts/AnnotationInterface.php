@@ -40,4 +40,11 @@ interface AnnotationInterface
      */
     public function scope();
 
+    /**
+     * 注册类型参数
+     * @example Constant::ANO_TAG | Constant::ANO_DECORATOR | Constant::ANO_PROVIDER
+     * @return string
+     */
+    public function type();
+
 }

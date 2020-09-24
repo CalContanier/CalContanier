@@ -34,7 +34,16 @@ abstract class AbsAnnotationParseInterface implements AnnotationParseInterface
      */
     public function __construct(string $docComment = '')
     {
+        $this->init($docComment);
         $docComment && $this->parse($docComment);
+    }
+
+    /**
+     * @param string $docComment
+     */
+    protected function init(string $docComment = '')
+    {
+
     }
 
     /**

@@ -20,19 +20,21 @@ class Annotation extends AbsAnnotationParseInterface
      * @var TagAnnotation
      */
     protected $tag;
+
+    /**
+     * @var AnnotationRegister
+     */
+    protected $register;
     
     /**
-     * 数据提供者
-     * @var DataProviderAnnotation
+     * @param string $docComment
      */
-    protected $dataProvider;
-    
-    /**
-     * 装饰器
-     * @var array
-     */
-    protected $decorator;
-    
+    protected function init(string $docComment = '')
+    {
+        $this->tag = new TagAnnotation();
+        $this->register = new AnnotationRegister();
+    }
+
 
     /**
      * @param string $docComment
@@ -40,9 +42,7 @@ class Annotation extends AbsAnnotationParseInterface
      */
     protected function doParse(string $docComment)
     {
-        $this->docComment = $docComment;
-        $this->tag = new TagAnnotation($docComment);
-        $this->dataProvider = new DataProviderAnnotation();
+        $this->tag->parse($docComment);
     }
 
     /**
@@ -52,21 +52,14 @@ class Annotation extends AbsAnnotationParseInterface
     {
         return $this->tag->getTags();
     }
-    
-    /**
-     * @return array
-     */
-    public function getDataProviders(): array
-    {
-        return $this->dataProvider->getParams();
-    }
-    
-    /**
-     * @return array
-     */
-    public function getDecorator(): array
-    {
-        return $this->decorator;
-    }
 
+    /**
+     * @return AnnotationRegister
+     */
+    public function register()
+    {
+        return $this->register;
+    }
+    
+    
 }
